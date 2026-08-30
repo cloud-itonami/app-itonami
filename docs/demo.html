@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>app-itonami — 生成されたデモ</title>
+<style>
+:root {
+  --ink: #1a1a1c; --dim: #5b5b60; --line: #d9d9de; --bg: #fbfbfc; --panel: #fff;
+  --ok: #0b6b3a; --no: #8a1c1c; --accent: #1a4f9c; --space: 1rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --ink: #ececef; --dim: #a0a0a8; --line: #34343a; --bg: #131316; --panel: #1b1b20;
+          --ok: #5fd39a; --no: #f08a8a; --accent: #7fb0f5; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: calc(var(--space) * 2) var(--space); background: var(--bg); color: var(--ink);
+       font: 15px/1.65 system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+main { max-width: 60rem; margin: 0 auto; }
+h1 { font-size: 1.6rem; margin: 0 0 .3rem; }
+h2 { font-size: 1.1rem; margin: calc(var(--space) * 2) 0 .5rem; padding-top: var(--space); border-top: 1px solid var(--line); }
+p { margin: .5rem 0; }
+.lede { color: var(--dim); }
+.warn { border-left: 3px solid var(--accent); padding: .6rem .9rem; background: var(--panel); margin: var(--space) 0; }
+table { width: 100%; border-collapse: collapse; margin: .6rem 0; font-size: .9rem; }
+th, td { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--dim); font-weight: 600; white-space: nowrap; }
+td.n { text-align: right; font-variant-numeric: tabular-nums; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .87em; }
+.ok { color: var(--ok); font-weight: 600; }
+.no { color: var(--no); font-weight: 600; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .6rem; margin: .8rem 0; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: .7rem .9rem; }
+.stat b { display: block; font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--dim); font-size: .8rem; }
+footer { color: var(--dim); font-size: .85rem; margin-top: calc(var(--space) * 2);
+         padding-top: var(--space); border-top: 1px solid var(--line); }
+</style>
+<main>
+<h1>app-itonami — 生成されたデモ</h1>
+<p class="lede">航空機エンジンのライフサイクル・シミュレーション。設計 → 調達 → 組立 → 試験 → 認証。</p>
+
+<div class="warn">
+<p><strong>このページは手で書かれていない。</strong> <code>kotoba/tools/gen-demo.ts</code> が
+<code>kotoba/src/</code> の実装を <code>@etzhayyim/sdk-mock</code> に対して実際に走らせ、
+<em>書き込んだあと読み戻した</em>値だけで組み立てている。数値を 1 つも打っていないので、
+実装が変われば次の生成でこのページも変わる。</p>
+<p><strong>これはシミュレーションであって実物の権威ではない。</strong> PII は無く、決済は
+起こらず、ここでの「認証」「試験結果」は模擬値である。相手は mock SDK であって実在の
+AT PDS ではない。</p>
+</div>
+
+<h2>ロールアップ（<code>coverage()</code> が返した値）</h2>
+<div class="grid">
+  <div class="stat"><b>3</b><span>エンジン設計</span></div>
+  <div class="stat"><b>3</b><span>調達品目</span></div>
+  <div class="stat"><b>2</b><span>組立記録</span></div>
+  <div class="stat"><b>3</b><span>試験結果</span></div>
+  <div class="stat"><b>¥76,400,000</b><span>調達額（模擬）</span></div>
+</div>
+<p class="lede">調達額は行から再計算して <code>coverage()</code> の値と突き合わせている
+（一致しなければ生成器は書き出さずに終わる）。</p>
+
+<h2>エンジン設計 — <code>listEngines()</code> 3 件</h2>
+<table>
+<tr><th>engineId</th><th>設計コード</th><th>形式</th><th>定格推力</th><th>質量</th><th>認証</th><th>DID</th></tr>
+<tr><td><code>PW1100G</code></td><td>PW1100G-JM</td><td>turbofan</td><td><span class="n">147.00 kN</span></td><td><span class="n">2,857 kg</span></td><td>uncertified</td><td><code>did:web:itonami.etzhayyim.com:engine:pw1100g</code></td></tr>
+<tr><td><code>CFM56-7B</code></td><td>CFM56-7B</td><td>turbofan</td><td><span class="n">121.00 kN</span></td><td><span class="n">2,380 kg</span></td><td>certified</td><td><code>did:web:itonami.etzhayyim.com:engine:cfm56-7b</code></td></tr>
+<tr><td><code>H3-EPU</code></td><td>H3-EPU-1</td><td>electric</td><td><span class="n">9.00 kN</span></td><td><span class="n">210 kg</span></td><td>retired</td><td><code>did:web:itonami.etzhayyim.com:engine:h3-epu</code></td></tr>
+</table>
+<p class="lede">推力は kN×100 の整数で保持されている（<code>14700</code>
+= 147.00 kN）。AT Lexicon に float が無いための設計であって、
+丸め落ちではない。</p>
+
+<h2>調達 — <code>listProcurement()</code> 3 件</h2>
+<table>
+<tr><th>itemId</th><th>engineId</th><th>UNSPSC</th><th>供給者 ISIC</th><th>数量</th><th>単価（模擬）</th><th>小計</th></tr>
+<tr><td><code>P-FAN-1</code></td><td><code>CFM56-7B</code></td><td><code>25171700</code></td><td><code>3030</code></td><td><span class="n">24</span></td><td><span class="n">¥1,500,000</span></td><td><span class="n">¥36,000,000</span></td></tr>
+<tr><td><code>P-DISC-1</code></td><td><code>CFM56-7B</code></td><td><code>25171701</code></td><td><code>2591</code></td><td><span class="n">6</span></td><td><span class="n">¥4,200,000</span></td><td><span class="n">¥25,200,000</span></td></tr>
+<tr><td><code>P-VANE-1</code></td><td><code>PW1100G</code></td><td><code>25171702</code></td><td><code>3030</code></td><td><span class="n">40</span></td><td><span class="n">¥380,000</span></td><td><span class="n">¥15,200,000</span></td></tr>
+</table>
+<p class="lede">調達品目は UNSPSC の 8 桁 commodity、供給者は ISIC Rev.4 の 4 桁 class で分類される。
+どちらも桁数が検証されている（下の拒否表）。</p>
+
+<h2>組立 — <code>listAssemblies()</code> 2 件</h2>
+<table>
+<tr><th>assemblyId</th><th>engineId</th><th>フェーズ</th><th>進捗</th><th>備考</th></tr>
+<tr><td><code>A-CORE-1</code></td><td><code>CFM56-7B</code></td><td>assembly</td><td><span class="n">65.0 %</span></td><td>core module mated</td></tr>
+<tr><td><code>A-TEST-1</code></td><td><code>CFM56-7B</code></td><td>testing</td><td><span class="n">80.0 %</span></td><td>—</td></tr>
+</table>
+<p class="lede">進捗は per-mille（0–1000）の整数。</p>
+
+<h2>試験 — <code>listTests()</code> 3 件</h2>
+<table>
+<tr><th>testId</th><th>engineId</th><th>種別</th><th>結果</th><th>達成推力</th><th>時間</th></tr>
+<tr><td><code>T-BENCH-1</code></td><td><code>CFM56-7B</code></td><td>bench</td><td><span class="ok">pass</span></td><td><span class="n">120.50 kN</span></td><td><span class="n">3,600 s</span></td></tr>
+<tr><td><code>T-FLIGHT-1</code></td><td><code>CFM56-7B</code></td><td>flight</td><td><span class="no">conditional</span></td><td><span class="n">119.00 kN</span></td><td><span class="n">7,200 s</span></td></tr>
+<tr><td><code>T-GND-1</code></td><td><code>PW1100G</code></td><td>ground</td><td><span class="no">fail</span></td><td><span class="n">131.00 kN</span></td><td><span class="n">1,800 s</span></td></tr>
+</table>
+
+<h2>門が閉まること — 実際に拒否された 12 件</h2>
+<p>ハッピーパスだけを見せるページは、門が閉まる証拠にならない。以下は生成器が実際に
+呼んで <em>拒否された</em>もので、返ってきた理由の文字列をそのまま載せている。
+理由が改名されれば生成器は失敗する —— それがこの表の効き目である。</p>
+<table>
+<tr><th>試したこと</th><th>status</th><th>理由</th></tr>
+<tr><td>engineType outside the closed vocabulary</td><td><span class="no">rejected</span></td><td><code>invalidEngineType</code></td></tr>
+<tr><td>thrust must be a positive integer (kN×100)</td><td><span class="no">rejected</span></td><td><code>thrustRatingKnMustBePosInt</code></td></tr>
+<tr><td>an engine already defined is not redefined</td><td><span class="no">alreadyExists</span></td><td><code>—</code></td></tr>
+<tr><td>progress outside 0..1000 per-mille</td><td><span class="no">rejected</span></td><td><code>progressPermilleMustBe0to1000</code></td></tr>
+<tr><td>assembly against an engine that does not exist</td><td><span class="no">engineNotFound</span></td><td><code>engineNotFound:GHOST</code></td></tr>
+<tr><td>UNSPSC must be 8 digits</td><td><span class="no">rejected</span></td><td><code>invalidUnspscCode</code></td></tr>
+<tr><td>ISIC Rev.4 class must be 4 digits</td><td><span class="no">rejected</span></td><td><code>invalidSupplierIsicCode</code></td></tr>
+<tr><td>procurement against an engine that does not exist</td><td><span class="no">engineNotFound</span></td><td><code>engineNotFound:GHOST</code></td></tr>
+<tr><td>test outcome outside the closed vocabulary</td><td><span class="no">rejected</span></td><td><code>invalidOutcomeCode</code></td></tr>
+<tr><td>test against an engine that does not exist</td><td><span class="no">engineNotFound</span></td><td><code>engineNotFound:GHOST</code></td></tr>
+<tr><td>certification cannot leave the retired terminal state</td><td><span class="no">rejected</span></td><td><code>engineRetired</code></td></tr>
+<tr><td>certification of an engine that does not exist</td><td><span class="no">notFound</span></td><td><code>engineNotFound</code></td></tr>
+</table>
+
+<h2>受理された 13 件</h2>
+<table>
+<tr><th>呼び出し</th><th>status</th></tr>
+<tr><td>defineEngine CFM56-7B</td><td><span class="ok">defined</span></td></tr>
+<tr><td>defineEngine PW1100G</td><td><span class="ok">defined</span></td></tr>
+<tr><td>defineEngine H3-EPU</td><td><span class="ok">defined</span></td></tr>
+<tr><td>addProcurement fan blades (UNSPSC 25171700 / ISIC 3030)</td><td><span class="ok">added</span></td></tr>
+<tr><td>addProcurement turbine discs</td><td><span class="ok">added</span></td></tr>
+<tr><td>addProcurement stator vanes for PW1100G</td><td><span class="ok">added</span></td></tr>
+<tr><td>recordAssembly core module 65%</td><td><span class="ok">recorded</span></td></tr>
+<tr><td>recordAssembly into testing 80%</td><td><span class="ok">recorded</span></td></tr>
+<tr><td>recordTest bench (pass)</td><td><span class="ok">recorded</span></td></tr>
+<tr><td>recordTest flight (conditional)</td><td><span class="ok">recorded</span></td></tr>
+<tr><td>recordTest ground on PW1100G (fail)</td><td><span class="ok">recorded</span></td></tr>
+<tr><td>setCertification CFM56-7B → in_progress</td><td><span class="ok">updated</span></td></tr>
+<tr><td>setCertification CFM56-7B → certified</td><td><span class="ok">updated</span></td></tr>
+</table>
+
+<footer>
+<p>生成: <code>cd kotoba &amp;&amp; npm run demo</code> —— 実装は <code>kotoba/src/registry.ts</code>、
+生成器は <code>kotoba/tools/gen-demo.ts</code>。生成器は、ストアが空・拒否が 0 件・
+ロールアップが行の合計と食い違う、のいずれでも書き出さずに終了する。</p>
+<p>この repo に live な配備は無い（<a href="../README.md">README</a> の「現在地」）。
+数値は模擬値であり、利用者数・売上を主張していない。</p>
+</footer>
+</main>
+</html>

@@ -100,11 +100,64 @@ exit=0
 | procurement | UNSPSC 8 桁 / ISIC 4 桁の桁数検証、engine への FK |
 | test + coverage | 4 コレクションの集計と、`totalProcurementJpy` などの導出値 |
 
-## 5. 後片付け
+## 5. デモページを生成する
 
-**この repo に `.gitignore` は 1 つも無い。** `node_modules/` **と `package-lock.json`** の
-両方を消さないと checkout が dirty のまま残る（次に触る人・自動化がこの repo を
-「他人の作業中」と読んで避ける）。
+**ここまでの 4 手は「壊れていない」ことしか示していない。** 何をするものかを見るには、
+実装を実際に 1 本走らせる:
+
+```bash
+npm run demo
+echo "exit=$?"
+```
+
+**実測**（2026-08-30、node v26.7.0 / npm 11.19.0）:
+
+```
+WROTE     <...>/app-itonami/docs/demo.html
+ENGINES   3   PROCUREMENT  3   ASSEMBLIES  2   TESTS  3
+ACCEPTED  13  REFUSED      12  PROCUREMENT_JPY  76400000
+exit=0
+```
+
+`docs/demo.html` をブラウザで開く。**ページの数値は 1 つも手で書かれていない** ——
+`tools/gen-demo.ts` が `src/` の関数を呼び、書き込んだあと読み戻した値だけを載せている。
+
+**生成器は 3 つの終了コードを使い分ける。** 「走れなかった」を「走って問題が無かった」と
+同じ顔で報告しないためである:
+
+| exit | 意味 | 自分で再現する |
+|---|---|---|
+| `0` | 書き出した | 上のとおり |
+| `1` | 走ったが、実装が生成器の主張どおりに振る舞わなかった | `src/registry.ts` の `invalidUnspscCode` を別名に変えて `npm run demo` |
+| `2` | そもそも走れなかった | 下の囲みのとおり（固定パスを使わないこと） |
+
+`2` を自分で出すには、実装ではなく**依存**を外す:
+
+```bash
+D=$(mktemp -d)
+mv node_modules/@etzhayyim/sdk-mock "$D/"
+npm run demo; echo "exit=$?"          # 実測: exit=2
+mv "$D/sdk-mock" node_modules/@etzhayyim/sdk-mock; rmdir "$D"
+```
+
+> ⚠ **`mv ... /tmp/x && npm run demo` と書かないこと。** `/tmp/x` が既に在ると `mv` が
+> 失敗し、`&&` が短絡して **`npm run demo` は 1 度も走らない** —— それでも
+> `echo "exit=$?"` は `1` を出すので、**生成器が拒否したのと見分けがつかない**。
+> これは実際にこの手順を書いている最中に踏んだ。`mktemp -d` を使う。
+
+**なぜ `1` と `2` を分けるか。** 実測（2026-08-30）で 7 通り壊して確かめたうち、
+`@etzhayyim/sdk-mock` を取り去った 1 件だけが `2` を返す。もし両方 `1` なら、
+**依存が壊れているだけの実行が「実装が壊れている」として報告される**。逆に両方 `0` なら
+最悪で、`docs/demo.html` は前回の内容のまま残り、誰も気づかない。
+
+> **拒否が 0 件なら生成器は書き出さない。** ハッピーパスだけのページは、門が閉まる証拠に
+> ならない。同じ理由で、ストアが空・`coverage()` の合計が行の合計と食い違う、のいずれでも
+> 書き出さずに終わる。
+
+## 6. 後片付け
+
+`kotoba/.gitignore` が `node_modules/` と `package-lock.json` を無視するので、
+**install しただけでは checkout は dirty にならない**。消したいときは:
 
 ```bash
 cd ..
@@ -112,9 +165,9 @@ rm -rf kotoba/node_modules kotoba/package-lock.json
 git status --porcelain    # 実測: 空
 ```
 
-> **lockfile を忘れやすい。** `node_modules/` だけ消した時点の実測は
-> `?? kotoba/package-lock.json` が残る。この repo は lockfile を commit していないので、
-> 消すのが元の状態である。
+> **`docs/demo.html` は commit される生成物である。** 上の `npm run demo` を回した結果が
+> 手元の `docs/demo.html` と一致しなければ、`git diff` に出る —— それは片付け忘れではなく、
+> **実装が変わったのにページが追従していない**という報告である。
 
 ## 付録: `appview/` が build できないことを自分で確かめる
 

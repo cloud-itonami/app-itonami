@@ -1,0 +1,5 @@
+# This package installs into the checkout. Neither of these is committed:
+# git deps are pinned by SHA and registry deps are pinned exactly in
+# package.json, so a lockfile would be the only thing here that could drift.
+node_modules/
+package-lock.json

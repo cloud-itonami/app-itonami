@@ -13,7 +13,7 @@ ISIC Rev.4（4 桁 class）で分類する。
 この README が書くのは *設計* ではなく **今この repo に何が在って、何が動くか**である ——
 そして後述するとおり、**CLAUDE.md には切り出し前のパスと古い方式が残っている。**
 
-## この repo に在るもの（34 ファイル）
+## この repo に在るもの（38 ファイル）
 
 `etzhayyim/root` の `60-apps/etzhayyim-project-itonami`（rev `64135b75`、30 ファイル /
 105,555 バイト）から切り出した standalone artifact（`migration.edn`）。
@@ -24,7 +24,8 @@ fleet の他の repo（`app-warehouse` / `app-dogaka` など）と同じ扱い�
 
 | パス | 中身 | 手元で動くか |
 |---|---|---|
-| **`kotoba/`**（7 ファイル / 31 KB） | `@etzhayyim/itonami-kotoba` —— **参照実装**。AT PDS レコードに実際に永続化する 11 関数（engine / assembly / procurement / test / coverage）。`@etzhayyim/sdk-mock` に対する vitest スイート付き | **動く**（[quickstart](docs/operator-quickstart.md)） |
+| **`kotoba/`**（10 ファイル / 42 KB） | `@etzhayyim/itonami-kotoba` —— **参照実装**。AT PDS レコードに実際に永続化する 11 関数（engine / assembly / procurement / test / coverage）。`@etzhayyim/sdk-mock` に対する vitest スイートと、**実装を走らせてデモページを生成する `tools/gen-demo.ts`** 付き | **動く**（[quickstart](docs/operator-quickstart.md)） |
+| **`docs/demo.html`**（11 KB） | 上の生成器の出力。**手で書かれていない** —— 実装が書き込んで読み戻した値だけで組み立てられている | **生成物**（`cd kotoba && npm run demo`） |
 | **`appview/itonami-it0n4m1x/`**（3 ファイル / 16 KB） | Cloudflare Worker + kotodama actor 記述。XRPC を 9 個公開する **edge proxy** —— 書き込みは `{ok:true, queued:true}` を返すだけで永続化せず、読み取りは常に空を返す | **動かない**（`wrangler.jsonc` の alias が実在しないパスを指す） |
 | **`svelte/`**（18 ファイル / 51 KB） | SvelteKit SPA（`prerender=true` / `ssr=false`）。4 フェーズのコンポーネントと、**クライアント側だけで完結する**シミュレーション store（215 行） | **未検証**（この pass では触っていない） |
 | `CLAUDE.md` | 設計の正本。ただし下記のドリフトあり | — |
@@ -78,6 +79,55 @@ fleet の他の repo（`app-warehouse` / `app-dogaka` など）と同じ扱い�
 | `it0n4m1x.etzhayyim.com` | 解決しない |
 | `etzhayyim.com`（ゾーン頂点） | 解決する（172.67.179.128 / Cloudflare） |
 
+## 動くものを見る —— `docs/demo.html` は生成物である
+
+**[`docs/demo.html`](docs/demo.html) を開くと、`kotoba/` の実装が実際に何をするかが見える。**
+設計 → 調達 → 組立 → 試験 → 認証を 1 本走らせた結果（エンジン 3 / 調達 3 / 組立 2 / 試験 3）と、
+**実際に拒否された 12 件**が載っている。
+
+**このページは手で書かれていない。** `kotoba/tools/gen-demo.ts` が `kotoba/src/` の関数を
+`@etzhayyim/sdk-mock` に対して呼び、**書き込んだあと読み戻した**値だけで組み立てる:
+
+```bash
+cd kotoba && npm run demo
+# WROTE     …/docs/demo.html
+# ENGINES   3  PROCUREMENT  3  ASSEMBLIES  2  TESTS  3
+# ACCEPTED  13 REFUSED      12 PROCUREMENT_JPY  76400000
+```
+
+**生成器は書き出しを拒否することがある。** 手書きのデモページは、実装が壊れても緑のまま
+飾りとして残る —— 何もページと実装を結んでいないからである。この生成器は結んでいる:
+
+| 終了コード | 意味 |
+|---|---|
+| `0` | 書き出した |
+| `1` | **走ったが、実装が生成器の主張どおりに振る舞わなかった** |
+| `2` | **そもそも走れなかった**（実装や mock SDK を import できない） |
+
+`1` と `2` を分けているのは、「測れなかった」を「測って問題が無かった」と同じ顔で
+報告しないためである（superproject の ADR-2608136000）。
+
+**拒否の理由文字列を固定している。** 生成器は `invalidUnspscCode` / `engineNotFound` /
+`progressPermilleMustBe0to1000` のような**理由そのもの**を突き合わせる —— 「何か拒否された」
+では、別の原因で早く落ちた呼び出しを「拒否を実演した」と数えてしまう。上流が理由を改名すれば
+これは落ちる。**それがこの検査の効き目であって、欠点ではない。**
+
+実際に壊して確かめてある（2026-08-30、7 通り。無改変では `exit 0`）:
+
+| 壊した箇所 | 生成器の答え |
+|---|---|
+| `ENGINE_TYPES` が何でも受理する | `exit 1` — engineType の拒否が `defined` になった |
+| 理由を `invalidUnspscCode` → `badUnspsc` に改名 | `exit 1` — 理由が変わった |
+| `coverage` が数量を掛け忘れる | `exit 1` — 行の合計 76,400,000 と 6,080,000 が食い違う |
+| FK 検査を素通しして `GHOST` を実在させる | `exit 1` — `engineNotFound` が `recorded` になった |
+| `listEngines` が常に空を返す | `exit 1` — **空のページを書かずに終わる** |
+| `coverage` の件数が list とずれる | `exit 1` — 4 と 3 が食い違う |
+| `@etzhayyim/sdk-mock` を取り去る | **`exit 2`** — 走れなかった（`1` ではない） |
+
+**このページが主張していないこと。** 相手は mock SDK であって実在の AT PDS ではない。
+数値は模擬値で、利用者数も売上も主張していない。`appview/` と `svelte/` の状態は
+これで何も変わっていない（下記のとおり）。
+
 ## `CLAUDE.md` のドリフト（触る前に知っておくこと）
 
 **古いのは CLAUDE.md の方であって、コードではない。** この pass では直していない（1 反復 1 軸）。
@@ -92,6 +142,8 @@ fleet の他の repo（`app-warehouse` / `app-dogaka` など）と同じ扱い�
 
 ## 入口
 
+- **何をするものか見る**: [`docs/demo.html`](docs/demo.html) —— 実装を走らせて生成した
+  ライフサイクル 1 本と、拒否された 12 件（`cd kotoba && npm run demo` で再生成）
 - **手元で動かす**: [`docs/operator-quickstart.md`](docs/operator-quickstart.md) ——
   `kotoba/` の型検査とテストを実際に通す手順（実測値つき）
 - **設計を読む**: [`CLAUDE.md`](CLAUDE.md)（上のドリフト表を先に読むこと）
