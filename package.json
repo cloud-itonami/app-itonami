@@ -1,0 +1,20 @@
+{
+  "name": "app-itonami",
+  "version": "1.0.0",
+  "description": "**`itonami`（営み）は機能を示さない名前なので、まず名乗る —— これは航空機エンジンの ライフサイクル・シミュレーションである。** 設計 → 調達 → 組立 → 試験 → デジタルツイン運用 までを模擬して記録し、調達品目を UNSPSC（8 桁 commodity）で、サプライヤー産業を ISIC Rev.4（4 桁 class）で分類する。",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}
