@@ -22,7 +22,7 @@
       "script": "svelte_scan.py",
       "skill": null,
       "skills": [],
-      "workdir": "~/github/com-junkawasaki"
+      "workdir": null
     }
   ]
 }
