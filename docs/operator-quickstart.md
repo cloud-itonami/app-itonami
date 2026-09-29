@@ -232,7 +232,7 @@ cd ../.. && git status --porcelain    # 実測: 空
 **分からない**: 実物の AT PDS に対する挙動（テストは `@etzhayyim/sdk-mock` に対して走る。
 ネットワーク越しの PDS には一度も触れていない）/ `svelte/` の SPA が動くか（**この pass では
 一度も build も起動もしていない**）/ `appview/` の 9 個の XRPC が dispatcher の先で何をするか
-（`{ok:true, queued:true}` を返すだけで、永続化は downstream）/ `CLAUDE.md` が記述する
+（`{ok:true, queued:true}` を返すだけで、永続化は downstream）/ `AGENTS.md` が記述する
 RisingWave 側の実体（切り出し対象外で、この repo からは確認できない）。
 
 **ここで緑を見ても、itonami が動くことの証拠にはならない** —— 確かめたのは
