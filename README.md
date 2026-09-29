@@ -9,9 +9,9 @@ ISIC Rev.4（4 桁 class）で分類する。
 ここに記録される「認証」「試験結果」は模擬値である（`axis-clean`。OEM の実際の耐空証明権限
 ではない）。
 
-設計の正本は **[`CLAUDE.md`](CLAUDE.md)**（ドメインモデル・XRPC 表・SQL グラフスキーマ）。
+設計の正本は **[`AGENTS.md`](AGENTS.md)**（ドメインモデル・XRPC 表・SQL グラフスキーマ）。
 この README が書くのは *設計* ではなく **今この repo に何が在って、何が動くか**である ——
-そして後述するとおり、**CLAUDE.md には切り出し前のパスと古い方式が残っている。**
+そして後述するとおり、**AGENTS.md には切り出し前のパスと古い方式が残っている。**
 
 ## この repo に在るもの（38 ファイル）
 
@@ -28,7 +28,7 @@ fleet の他の repo（`app-warehouse` / `app-dogaka` など）と同じ扱い�
 | **`docs/demo.html`**（11 KB） | 上の生成器の出力。**手で書かれていない** —— 実装が書き込んで読み戻した値だけで組み立てられている | **生成物**（`cd kotoba && npm run demo`） |
 | **`appview/itonami-it0n4m1x/`**（3 ファイル / 16 KB） | Cloudflare Worker + kotodama actor 記述。XRPC を 9 個公開する **edge proxy** —— 書き込みは `{ok:true, queued:true}` を返すだけで永続化せず、読み取りは常に空を返す | **動かない**（`wrangler.jsonc` の alias が実在しないパスを指す） |
 | **`svelte/`**（18 ファイル / 51 KB） | SvelteKit SPA（`prerender=true` / `ssr=false`）。4 フェーズのコンポーネントと、**クライアント側だけで完結する**シミュレーション store（215 行） | **未検証**（この pass では触っていない） |
-| `CLAUDE.md` | 設計の正本。ただし下記のドリフトあり | — |
+| `AGENTS.md` | 設計の正本。ただし下記のドリフトあり | — |
 | `README.edn` / `migration.edn` / `NOTICE` | 機械可読な同定 / 切り出しの出所 / Apache-2.0 + Charter Rider（**`NOTICE` が参照する `CHARTER-RIDER.md` はこの repo に無い** —— 切り出し対象外） | — |
 
 ## 現在地（2026-08-17 実測）
@@ -46,7 +46,7 @@ fleet の他の repo（`app-warehouse` / `app-dogaka` など）と同じ扱い�
   返すだけで、`cmdListEngines` は `{items: [], total: 0}` を、`cmdGetEngine` は
   `{error:"notFound"}` を**常に**返す。
 
-一方 **`CLAUDE.md` は 3 つ目の方式（RisingWave の `vertex_itonami_*` テーブルと edge）だけを
+一方 **`AGENTS.md` は 3 つ目の方式（RisingWave の `vertex_itonami_*` テーブルと edge）だけを
 記述している。** どれが現行かは、この repo の中だけでは決着しない。**実際に読み書きする
 コードは `kotoba/` だけ**なので、動く実装を読みたいならそこから入る。
 
@@ -128,11 +128,11 @@ cd kotoba && npm run demo
 数値は模擬値で、利用者数も売上も主張していない。`appview/` と `svelte/` の状態は
 これで何も変わっていない（下記のとおり）。
 
-## `CLAUDE.md` のドリフト（触る前に知っておくこと）
+## `AGENTS.md` のドリフト（触る前に知っておくこと）
 
-**古いのは CLAUDE.md の方であって、コードではない。** この pass では直していない（1 反復 1 軸）。
+**古いのは AGENTS.md の方であって、コードではない。** この pass では直していない（1 反復 1 軸）。
 
-| CLAUDE.md の記述 | 実際 |
+| AGENTS.md の記述 | 実際 |
 |---|---|
 | 「XRPC Surface (MVP — **7 methods**)」 | `app.ts` は **9 個**登録している。表に無いのは `addProcurementItem` と `registerSupplier` |
 | Lexicon は `00-contracts/lexicons/com/etzhayyim/apps/itonami/` | **この repo に `00-contracts/` は無い**（切り出し前のモノレポのパス） |
@@ -146,7 +146,7 @@ cd kotoba && npm run demo
   ライフサイクル 1 本と、拒否された 12 件（`cd kotoba && npm run demo` で再生成）
 - **手元で動かす**: [`docs/operator-quickstart.md`](docs/operator-quickstart.md) ——
   `kotoba/` の型検査とテストを実際に通す手順（実測値つき）
-- **設計を読む**: [`CLAUDE.md`](CLAUDE.md)（上のドリフト表を先に読むこと）
+- **設計を読む**: [`AGENTS.md`](AGENTS.md)（上のドリフト表を先に読むこと）
 - **実装を読む**: `kotoba/src/registry.ts`（11 関数）→ `kotoba/src/types.ts`（検証規則と DID 体系）
 
 ## 制約
