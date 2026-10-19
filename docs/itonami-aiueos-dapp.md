@@ -49,3 +49,20 @@ bundle 段で 2b に着弾するところまで実測（= 2a の alias 修正は
 1. JUN-131: kotodama-host-sdk の TS→CLJC 移行（または facade 実装の復元）と
    shadow×cljk 解決（mirror ワークアラウンド or ツール側対応）。
 2. web/dist のビルド産物生成後に wrangler deploy --dry-run の完全通過を再測定。
+
+
+## build 復旧: dry-run 完全通過（2026-10-19、JUN-131）
+
+`wrangler deploy --dry-run` が **完全通過**（Total Upload 1,967.89 KiB /
+gzip 324.99 KiB）。手順（west シブリング前提）:
+
+1. 依存側で `npm install --ignore-scripts`（kotodama-host/sdk/kotodama-host-sdk、
+   kotoba-lang/xrpc、kotoba-lang/did-etzhayyim、kotoba-lang/sdk。file: リンクの
+   prepare script が tsc を要求するため `--ignore-scripts` が要る — 実測）。
+2. この repo で `npm install --ignore-scripts`（kotodama-host-sdk は file: 依存）。
+3. `mkdir -p web/dist`（assets ディレクトリ。SPA ビルド産物は shadow×cljk の
+   解決待ち = JUN-131 の残り半分）。
+4. `cd appview/itonami-it0n4m1x && wrangler deploy --dry-run`。
+
+alias 表は撤去済み。依存解決は node_modules（file: リンク）。app.ts の import
+は rename 済み（`@kotoba-lang/kotoba-kotodama-host-sdk`）。
