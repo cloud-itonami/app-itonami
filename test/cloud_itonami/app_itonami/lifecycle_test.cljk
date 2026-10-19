@@ -1,0 +1,38 @@
+(ns cloud-itonami.app-itonami.lifecycle-test
+  "lifecycle の parity fixture。数値は aiueos/itonami_lifecycle.cljk の
+  test-* と一致（guest が 3 ターゲットで同じ期待を通す）。"
+  (:require [clojure.test :refer [deftest is testing]]
+            [cloud-itonami.app-itonami.lifecycle :as l]))
+
+(deftest register-parity
+  (testing "guest の test-register / test-register-missing と同じ（0/1/2 と 3）"
+    (is (= 0 (l/validate-register {:engine-id "E1" :design_code "CFM56-7B"
+                                   :design-code "CFM56-7B"})))
+    (is (= 1 (l/validate-register {:design-code "X"})))
+    (is (= 2 (l/validate-register {:engine-id "E1"})))
+    (is (= 3 (l/validate-register {})))))
+
+(deftest assembly-parity
+  (testing "guest の test-assembly / test-assembly-range と同じ"
+    (is (= 0 (l/validate-assembly {:engine-id "E1" :phase-code "assembly" :progress-permille 500})))
+    (is (= 0 (l/validate-assembly {:engine-id "E1" :phase-code "a" :progress-permille 0})))
+    (is (= 0 (l/validate-assembly {:engine-id "E1" :phase-code "a" :progress-permille 1000})))
+    (is (= 4 (l/validate-assembly {:engine-id "E1" :phase-code "a" :progress-permille 1001})))
+    (is (= 4 (l/validate-assembly {:engine-id "E1" :phase-code "a" :progress-permille -1})))
+    (is (= 3 (l/validate-assembly {:progress-permille 0})))))
+
+(deftest test-result-and-flight-parity
+  (testing "guest の test-test-result / test-flight-event と同じ"
+    (is (= 7 (l/validate-test-result {})))
+    (is (= 0 (l/validate-test-result {:engine-id "E" :test-type "bench" :outcome-code "pass"})))
+    (is (= 3 (l/validate-flight-event {})))
+    (is (= 0 (l/validate-flight-event {:engine-id "E" :event-code "X"})))))
+
+(deftest procurement-and-supplier-parity
+  (testing "guest の test-procurement / test-procurement-digits / test-supplier と同じ"
+    (is (= 1 (l/validate-procurement {:unspsc-code "25101504" :supplier-isic-code "6201"})))
+    (is (= 8 (l/validate-procurement {:engine-id "E" :unspsc-code "2510154" :supplier-isic-code "6201"})))
+    (is (= 16 (l/validate-procurement {:engine-id "E" :unspsc-code "25101504" :supplier-isic-code "620"})))
+    (is (= 0 (l/validate-supplier {:supplier-id "S" :supplier-name "N"})))
+    (is (= 4 (l/validate-supplier {:supplier-id "S" :supplier-name "N" :isic-code "62"})))
+    (is (= 7 (l/validate-supplier {:isic-code "62"})))))

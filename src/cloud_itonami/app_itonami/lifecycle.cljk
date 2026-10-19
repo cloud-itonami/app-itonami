@@ -1,0 +1,60 @@
+(ns cloud-itonami.app-itonami.lifecycle
+  "lifecycle command 検証（appview 側 adapter）。app.ts の各 handler の
+  error 規則（missingRequiredFields / invalidRange / invalidUnspscCode /
+  invalidIsicCode）と 1:1。セマンティクスの正本は aiueos/itonami_lifecycle.cljk
+  （itonami dapp bundle、`amu test` が jvm-kir / js / wasm で同じ fixture を
+  実行）。parity fixture の数値は guest の test-* と一致。pure、副作用なし。")
+
+(def error-bits
+  {:missing-engine-id 1
+   :missing-design-code 2
+   :missing-phase-code 2
+   :missing-test-type 2
+   :missing-event-code 2
+   :missing-unspsc-code 2
+   :missing-supplier-name 2
+   :missing-outcome 4
+   :missing-isic 4
+   :missing-supplier-id 1
+   :progress-out-of-range 4
+   :invalid-unspsc 8
+   :invalid-isic 16})
+
+(defn- missing [present? bit] (if present? 0 bit))
+
+(defn validate-register
+  [{:keys [engine-id design-code]}]
+  (+ (missing (seq engine-id) 1) (missing (seq design-code) 2)))
+
+(defn validate-assembly
+  [{:keys [engine-id phase-code progress-permille]}]
+  (+ (missing (seq engine-id) 1)
+     (missing (seq phase-code) 2)
+     (if (or (< progress-permille 0) (> progress-permille 1000)) 4 0)))
+
+(defn validate-test-result
+  [{:keys [engine-id test-type outcome-code]}]
+  (+ (missing (seq engine-id) 1)
+     (missing (seq test-type) 2)
+     (missing (seq outcome-code) 4)))
+
+(defn validate-flight-event
+  [{:keys [engine-id event-code]}]
+  (+ (missing (seq engine-id) 1) (missing (seq event-code) 2)))
+
+(defn- digits? [s n]
+  (and (seq s) (re-matches (re-pattern (str "\\d{" n "}")) s)))
+
+(defn validate-procurement
+  [{:keys [engine-id unspsc-code supplier-isic-code]}]
+  (+ (missing (seq engine-id) 1)
+     (missing (seq unspsc-code) 2)
+     (missing (seq supplier-isic-code) 4)
+     (if (digits? unspsc-code 8) 0 8)
+     (if (digits? supplier-isic-code 4) 0 16)))
+
+(defn validate-supplier
+  [{:keys [supplier-id supplier-name isic-code]}]
+  (+ (missing (seq supplier-id) 1)
+     (missing (seq supplier-name) 2)
+     (if (and (seq isic-code) (not (digits? isic-code 4))) 4 0)))

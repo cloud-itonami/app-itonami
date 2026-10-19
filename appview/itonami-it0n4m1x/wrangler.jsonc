@@ -4,16 +4,15 @@
   "compatibility_date": "2025-03-17",
   "compatibility_flags": ["nodejs_compat", "nodejs_als"],
   "alias": {
-    "@etzhayyim/kotodama-host-sdk": "/Users/junkawasaki/etzhayyim/etzhayyim-apps-etzhayyim/40-engine/kotoba/crates/kotoba-kotodama/sdk/kotodama-host-sdk/src/index.ts",
-    "pg": "/Users/junkawasaki/etzhayyim/etzhayyim-apps-etzhayyim/node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/index.js",
-    "@etzhayyim/xrpc/transport": "/Users/junkawasaki/etzhayyim/etzhayyim-apps-etzhayyim/10-protocol/xrpc/src/transport.ts",
-    "@etzhayyim/xrpc/auth": "/Users/junkawasaki/etzhayyim/etzhayyim-apps-etzhayyim/10-protocol/xrpc/src/auth.ts",
-    "@etzhayyim/xrpc/error": "/Users/junkawasaki/etzhayyim/etzhayyim-apps-etzhayyim/10-protocol/xrpc/src/error.ts",
-    "@etzhayyim/xrpc/nsid": "/Users/junkawasaki/etzhayyim/etzhayyim-apps-etzhayyim/10-protocol/xrpc/src/nsid.ts",
-    "@etzhayyim/xrpc/encode": "/Users/junkawasaki/etzhayyim/etzhayyim-apps-etzhayyim/10-protocol/xrpc/src/encode.ts"
+    "@etzhayyim/kotodama-host-sdk": "../../../../kotoba-lang/kotodama-host/sdk/kotodama-host-sdk/src/index.ts",
+    "@etzhayyim/xrpc/transport": "../../../../kotoba-lang/xrpc/src/transport.ts",
+    "@etzhayyim/xrpc/auth": "../../../../kotoba-lang/xrpc/src/auth.ts",
+    "@etzhayyim/xrpc/error": "../../../../kotoba-lang/xrpc/src/error.ts",
+    "@etzhayyim/xrpc/nsid": "../../../../kotoba-lang/xrpc/src/nsid.ts",
+    "@etzhayyim/xrpc/encode": "../../../../kotoba-lang/xrpc/src/encode.ts"
   },
   "assets": {
-    "directory": "../../svelte/build",
+    "directory": "../../web/dist",
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "single-page-application"
