@@ -1,0 +1,24 @@
+;; app-itonami — itonami（dapp）の aiueos アプリ記述子
+;; （形は kotoba-lang/aiueos/examples/apps/notes.edn 準拠）。
+;; 実装の正本: itonami_lifecycle.cljk / docs/itonami-aiueos-dapp.md。
+;;
+;; 判断コア guest（:effects #{}）は aircraft engine lifecycle の command 検証。
+;; スカラーのみ = KIR v3 / i64/direct ABI — kernel ホストと selfhost 両対応。
+;; キューイング・永続・XRPC はこの外。
+{:aiueos/component :app/itonami
+ :aiueos/kind :app
+ :aiueos/trust :untrusted
+ :aiueos/source "itonami_lifecycle.cljk"
+ :aiueos/wasm "itonami_lifecycle.wasm"
+ :aiueos/entry "main"
+ :aiueos/args []
+ :aiueos/imports #{}
+ :aiueos/exports #{:app/main
+                   :app/validate-register
+                   :app/validate-assembly
+                   :app/validate-test-result
+                   :app/validate-flight-event
+                   :app/validate-procurement
+                   :app/validate-supplier}
+ :aiueos/effects #{}
+ :aiueos/limits {:memory-pages 16 :fuel 5000000}}

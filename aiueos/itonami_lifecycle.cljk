@@ -1,0 +1,121 @@
+(ns itonami.lifecycle
+  "app-itonami command 検証コア — itonami dapp bundle（pure, :effects #{}）。
+
+  aircraft engine lifecycle simulation（設計→調達→組立→試験→運用）の
+  command 入力検証。appview/itonami-it0n4m1x/src/app.ts の各 handler が
+  返す error 規則（missingRequiredFields / invalidRange / invalidUnspscCode /
+  invalidIsicCode）と 1:1 の parity。キューイング・永続はこの外。
+
+  すべて i64 スカラー（presence は 1/0、数値は整数）。vector 型を使わない
+  ため KIR v3 / kotoba.i64/direct-v1（i64/direct ABI）—— Chicory kernel
+  ホストと amu selfhost（kototama-browser-host-v1）の両方で動く。
+
+  エラービット（0 = 正常。条件は重複しうる）:
+    validate-register:     1 engine_id 欠落 / 2 design_code 欠落
+    validate-assembly:     1 engine_id 欠落 / 2 phase_code 欠落
+                           / 4 progress_permille が [0,1000] 外
+    validate-test-result:  1 engine_id 欠落 / 2 test_type 欠落 / 4 outcome_code 欠落
+    validate-flight-event: 1 engine_id 欠落 / 2 event_code 欠落
+    validate-procurement:  1 engine_id 欠落 / 2 unspsc_code 欠落 / 4 isic 欠落
+                           / 8 UNSPSC が 8 桁でない / 16 ISIC が 4 桁でない
+    validate-supplier:     1 supplier_id 欠落 / 2 supplier_name 欠落
+                           / 4 isic_code が在って 4 桁でない
+
+  テストはゼロ引数 test-*、戻り 1/0:
+  <amu> test aiueos/itonami_lifecycle.cljk"
+  (:export [main validate-register validate-assembly validate-test-result
+            validate-flight-event validate-procurement validate-supplier
+            test-register test-register-missing test-assembly
+            test-assembly-range test-test-result test-flight-event
+            test-procurement test-procurement-digits test-supplier]))
+
+(defn main [] :i64
+  0)
+
+(defn- missing [has :i64 bit :i64] :i64
+  (if (= has 0) bit 0))
+
+(defn validate-register [has-engine-id :i64 has-design-code :i64] :i64
+  (+ (missing has-engine-id 1) (missing has-design-code 2)))
+
+(defn validate-assembly [has-engine-id :i64 has-phase-code :i64 progress-permille :i64] :i64
+  (+ (missing has-engine-id 1)
+     (missing has-phase-code 2)
+     (if (or (< progress-permille 0) (> progress-permille 1000)) 4 0)))
+
+(defn validate-test-result [has-engine-id :i64 has-test-type :i64 has-outcome :i64] :i64
+  (+ (missing has-engine-id 1) (missing has-test-type 2) (missing has-outcome 4)))
+
+(defn validate-flight-event [has-engine-id :i64 has-event-code :i64] :i64
+  (+ (missing has-engine-id 1) (missing has-event-code 2)))
+
+(defn- digits-8 [n :i64] :i64
+  (if (and (>= n 10000000) (<= n 99999999)) 1 0))
+
+(defn- digits-4 [n :i64] :i64
+  (if (and (>= n 1000) (<= n 9999)) 1 0))
+
+(defn validate-procurement [has-engine-id :i64 has-unspsc :i64 has-isic :i64 unspsc :i64 isic :i64] :i64
+  (+ (missing has-engine-id 1)
+     (missing has-unspsc 2)
+     (missing has-isic 4)
+     (if (= (digits-8 unspsc) 0) 8 0)
+     (if (= (digits-4 isic) 0) 16 0)))
+
+(defn validate-supplier [has-supplier-id :i64 has-supplier-name :i64 has-isic :i64 isic :i64] :i64
+  (+ (missing has-supplier-id 1)
+     (missing has-supplier-name 2)
+     (if (and (= has-isic 1) (= (digits-4 isic) 0)) 4 0)))
+
+;; --- tests（戻り 1 = pass） ------------------------------------------------
+
+(defn test-register [] :i64
+  (if (= (+ (validate-register 1 1) (validate-register 0 1) (validate-register 1 0))
+         3)
+    1 0))
+
+(defn test-register-missing [] :i64
+  (if (= (validate-register 0 0) 3) 1 0))
+
+(defn test-assembly [] :i64
+  (if (= (+ (validate-assembly 1 1 500) (validate-assembly 1 1 0) (validate-assembly 1 1 1000))
+         0)
+    1 0))
+
+(defn test-assembly-range [] :i64
+  ;; 4 (range) + 4 (range) + 3 (missing engine_id 1 + phase_code 2) = 11
+  (if (= (+ (validate-assembly 1 1 1001) (validate-assembly 1 1 -1) (validate-assembly 0 0 0))
+         11)
+    1 0))
+
+(defn test-test-result [] :i64
+  (if (= (+ (validate-test-result 1 1 1) (validate-test-result 0 1 1)
+            (validate-test-result 1 0 1) (validate-test-result 1 1 0))
+         7)
+    1 0))
+
+(defn test-flight-event [] :i64
+  (if (= (+ (validate-flight-event 1 1) (validate-flight-event 0 0))
+         3)
+    1 0))
+
+(defn test-procurement [] :i64
+  (if (= (+ (validate-procurement 1 1 1 25101504 6201)
+            (validate-procurement 0 1 1 25101504 6201))
+         1)
+    1 0))
+
+(defn test-procurement-digits [] :i64
+  (if (= (+ (validate-procurement 1 1 1 2510154 6201)
+            (validate-procurement 1 1 1 25101504 620))
+         24)
+    1 0))
+
+(defn test-supplier [] :i64
+  ;; 0 + 0 + 7 (1+2+4) + 4 = 11
+  (if (= (+ (validate-supplier 1 1 0 0)
+            (validate-supplier 1 1 1 6201)
+            (validate-supplier 0 0 1 62)
+            (validate-supplier 1 1 1 62))
+         11)
+    1 0))
