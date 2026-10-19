@@ -3,14 +3,6 @@
   "main": "src/app.ts",
   "compatibility_date": "2025-03-17",
   "compatibility_flags": ["nodejs_compat", "nodejs_als"],
-  "alias": {
-    "@etzhayyim/kotodama-host-sdk": "../../../../kotoba-lang/kotodama-host/sdk/kotodama-host-sdk/src/index.ts",
-    "@etzhayyim/xrpc/transport": "../../../../kotoba-lang/xrpc/src/transport.ts",
-    "@etzhayyim/xrpc/auth": "../../../../kotoba-lang/xrpc/src/auth.ts",
-    "@etzhayyim/xrpc/error": "../../../../kotoba-lang/xrpc/src/error.ts",
-    "@etzhayyim/xrpc/nsid": "../../../../kotoba-lang/xrpc/src/nsid.ts",
-    "@etzhayyim/xrpc/encode": "../../../../kotoba-lang/xrpc/src/encode.ts"
-  },
   "assets": {
     "directory": "../../web/dist",
     "binding": "ASSETS",

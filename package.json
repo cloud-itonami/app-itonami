@@ -15,6 +15,7 @@
   "type": "module",
   "dependencies": {
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "@kotoba-lang/kotoba-kotodama-host-sdk": "file:../../../kotoba-lang/kotodama-host/sdk/kotodama-host-sdk"
   }
 }
