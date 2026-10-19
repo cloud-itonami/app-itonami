@@ -1,0 +1,63 @@
+#!/usr/bin/env kbb
+;; scripts/shadow-mirror.cljk — shadow-cljs に .cljk を読ませる mirror 生成。
+;;
+;; 背景（実測 2026-10-19、JUN-131）: cljk 改名（ADR-2609111500）後、
+;; shadow-cljs は .cljk を 1 つも解決できず `The required namespace
+;; "..." is not available` で止まる（kaikei / app-itonami で同根を確認）。
+;; shadow は upstream の npm 配布物で拡張子を教えられないため、
+;; **ソースは .cljk のまま**、ビルド前に classpath 全体を `.shadow-mirror/`
+;; へ統合コピーし .cljk → .cljc（reader conditional を許すのは .cljc だけ）
+;; に rename して shadow に読ませる。shadow-cljs.edn は
+;; `:source-paths [".shadow-mirror"]` を持つ（グローバルのみ有効。
+;; --config-merge は build 単位にしか効かないので使わない — 実測）。
+;;
+;; 同一パスは先勝ち（classpath 順）。stdlib twin 等の重複が問題になったら
+;; そのとき classpath 順で制御する。
+;;
+;; 撤去条件: shadow-cljs が .cljk を直接解決するか、SPA ビルドが
+;; amu/kbb 系 toolchain に載った時点でこの mirror を止める。
+;;
+;; 使い方（repo root で）: kbb --backend sci scripts/shadow-mirror.cljk
+;;   → 続けて: npx shadow-cljs release app
+(ns shadow-mirror
+  (:require [clojure.string :as str]
+            ["node:child_process" :as child]
+            ["node:fs" :as fs]
+            ["node:path" :as path]))
+
+(def root (.cwd js/process))
+(def mirror-root (path/join root ".shadow-mirror"))
+
+(defn- classpath-dirs []
+  (let [cp (child/execSync "clojure -Spath -M:cljs" (clj->js {:cwd root :encoding "utf8"}))
+        entries (str/split (.trim cp) #":")]
+    (filterv #(and (fs/existsSync %) (.isDirectory (fs/statSync %))) entries)))
+
+(defn- cljk->cljc [nm]
+  (if (.endsWith nm ".cljk")
+    (str (subs nm 0 (- (count nm) 5)) ".cljc")
+    nm))
+
+(defn- mirror-dir! [src]
+  (letfn [(walk [d dst]
+            (fs/mkdirSync dst (clj->js {:recursive true}))
+            (doseq [e (fs/readdirSync d (clj->js {:withFileTypes true}))]
+              (let [p (path/join d (.-name e))]
+                (when-not (re-find #"(node_modules|\.git|_archive)" (.-name e))
+                  (let [out (path/join dst (cljk->cljc (.-name e)))]
+                    (if (.isDirectory e)
+                      (walk p out)
+                      (when-not (fs/existsSync out)
+                        (fs/cpSync p out))))))))]
+    (walk src mirror-root)))
+
+(defn -main [& _]
+  (when (fs/existsSync mirror-root)
+    (fs/rmSync mirror-root (clj->js {:recursive true :force true})))
+  (fs/mkdirSync mirror-root (clj->js {:recursive true}))
+  (let [dirs (classpath-dirs)]
+    (doseq [src dirs]
+      (mirror-dir! src))
+    (println "shadow-mirror:" (count dirs) "classpath dirs →" mirror-root)))
+
+(-main)
