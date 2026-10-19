@@ -66,3 +66,23 @@ gzip 324.99 KiB）。手順（west シブリング前提）:
 
 alias 表は撤去済み。依存解決は node_modules（file: リンク）。app.ts の import
 は rename 済み（`@kotoba-lang/kotoba-kotodama-host-sdk`）。
+
+### 追記: shadow×cljk も解決 — build 復旧 完了（2026-10-19、JUN-131）
+
+`npx shadow-cljs release app` が **Build completed**（94 files, 50 compiled,
+0 warnings）、`web/dist/js/main.js`（340 KB）を生成し、
+`wrangler deploy --dry-run` も完全通過（Total Upload 1,967.89 KiB）。
+**JUN-131 の完了条件 2/2 達成。**
+
+手順（上記 1-4 を置き換え）:
+
+1. `npm run build`（= `scripts/shadow-mirror.cljk` で classpath を
+   `.shadow-mirror/` へ統合コピー（.cljk → .cljc rename）→ `npx shadow-cljs
+   release app`）。依存側の `npm install --ignore-scripts` は同前。
+2. `cd appview/itonami-it0n4m1x && wrangler deploy --dry-run`
+
+方式: ソースは .cljk のまま。shadow は拡張子を教えられないため（upstream npm
+配布物）、ビルド前に mirror を生成して `deps.edn` の :cljs alias
+`:extra-paths [".shadow-mirror"]` で読ませる（shadow-cljs.edn の
+:source-paths は :deps モードで無効、--config-merge は build 単位 — いずれも
+実測）。撤去条件は scripts/shadow-mirror.cljk のヘッダに記載。

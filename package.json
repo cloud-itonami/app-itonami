@@ -7,7 +7,9 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:mirror": "kbb --backend sci scripts/shadow-mirror.cljk",
+    "build": "npm run build:mirror && npx shadow-cljs release app",
+    "build:watch": "npm run build:mirror && npx shadow-cljs watch app"
   },
   "keywords": [],
   "author": "",
