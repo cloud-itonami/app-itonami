@@ -1,0 +1,39 @@
+#!/usr/bin/env kbb
+;; scripts/probe-shadow-cljk.cljk — JUN-133 item 4: shadow-mirror 撤去条件の監視。
+;;
+;; shadow-cljs が .cljk を直接解決できるかを小さなビルドで確かめる。
+;;   OK   → mirror を撤去してよい（build:mirror を build から外す）
+;;   NEED → mirror がまだ必要（現状）
+;;
+;; 撤去条件（JUN-133）: 「shadow が .cljk を直接解決したら、または
+;; amu/kbb toolchain へ移行したら」。後者は reagent/re-frame バンドルを含み
+;; 現時点では非対応（amu の guest はスカラー）—— 前者の監視が本分。
+;;
+;; 使い方: npm run build:probe（build の先頭で走らせると要否が自動判定）。
+
+(require '[clojure.string :as str])
+(def fs (js/require "node:fs"))
+(def path (js/require "node:path"))
+(def cp (js/require "node:child_process"))
+
+;; node_modules を解決させるため repo 直下に置く（tmp では npx が見つからない）
+(def tmp (.join path (.cwd js/process) (str ".probe-shadow-" (js/Date.now))))
+(.mkdirSync fs (.join path tmp "src") #js {:recursive true})
+(.writeFileSync fs (.join path tmp "src" "probe_ns.cljk")
+                "(ns probe-ns)\n(defn main [] 1)\n")
+(.writeFileSync fs (.join path tmp "shadow-cljs.edn")
+                (str "{:source-paths [\"src\"]\n"
+                     " :builds {:probe {:target :node-script\n"
+                     "                  :main probe-ns/main\n"
+                     "                  :output-to \"out.js\"}}}\n"))
+
+(let [res (.spawnSync cp "sh" #js ["-c" "npx --no-install shadow-cljs compile probe"]
+                     #js {:cwd tmp :encoding "utf8"})
+      ok? (zero? (.-status res))]
+  (println (if ok?
+             "OK: shadow-cljs resolves .cljk directly - mirror を撤去してよい"
+             "NEED: shadow-cljs は .cljk を解決できない - mirror がまだ必要"))
+  (when-not ok?
+    (println (str/trim (str (.-stdout res) (.-stderr res)))))
+  (.rmSync fs tmp #js {:recursive true :force true})
+  (js/process.exit (if ok? 0 1)))
