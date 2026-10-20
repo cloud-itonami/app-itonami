@@ -9,7 +9,8 @@
   "scripts": {
     "build:mirror": "kbb --backend sci scripts/shadow-mirror.cljk",
     "build": "npm run build:mirror && npx shadow-cljs release app",
-    "build:watch": "npm run build:mirror && npx shadow-cljs watch app"
+    "build:watch": "npm run build:mirror && npx shadow-cljs watch app",
+    "build:probe": "kbb --backend sci scripts/probe-shadow-cljk.cljk"
   },
   "keywords": [],
   "author": "",
