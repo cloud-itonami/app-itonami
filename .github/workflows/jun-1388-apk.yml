@@ -46,22 +46,27 @@ jobs:
           if ! command -v age >/dev/null; then
             sudo apt-get install -y --no-install-recommends age
           fi
+          curl -fsSL --retry 4 'https://github.com/babashka/babashka/releases/download/v1.12.218/babashka-1.12.218-linux-amd64-static.tar.gz' -o "$RUNNER_TEMP/babashka.tgz"
+          printf '%s  %s\n' 7bd028cc794732ffde3da31ce4379840893c8e54f1046f92a8dfc4f4b3cddaf8 "$RUNNER_TEMP/babashka.tgz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/babashka"
+          tar -xzf "$RUNNER_TEMP/babashka.tgz" -C "$RUNNER_TEMP/babashka" bb
+          printf '%s\n' "$RUNNER_TEMP/babashka" >> "$GITHUB_PATH"
           df -h .
       - name: Build Murakumo arm64 and check native engines
         shell: bash
         working-directory: source
         run: |
           test "$(git rev-parse HEAD)" = "$ITO_COMMIT"
-          # Adjust build-tool host paths from the macOS defaults.
-          sed -i 's/darwin-x86_64/linux-x86_64/g' apps/murakumo/scripts/{build-native,build-image-native}.py
-          python3 apps/murakumo/scripts/build-native.py arm64-v8a
-          python3 apps/murakumo/scripts/build-image-native.py arm64-v8a
           npm --prefix packages/awai-ui ci --no-audit --no-fund
           npm --prefix packages/awai-ui run build
           npm --prefix otehon/shell ci --no-audit --no-fund
           npm --prefix apps/murakumo ci --no-audit --no-fund
           npm --prefix apps/murakumo run build
           npm --prefix apps/murakumo test
+          # Adjust build-tool host paths from the macOS defaults.
+          sed -i 's/darwin-x86_64/linux-x86_64/g' apps/murakumo/scripts/{build-native,build-image-native}.py
+          python3 apps/murakumo/scripts/build-native.py arm64-v8a
+          python3 apps/murakumo/scripts/build-image-native.py arm64-v8a
           npm --prefix apps/murakumo run tauri -- android build --apk --target aarch64 --debug
       - name: Verify and encrypt APK
         shell: bash
