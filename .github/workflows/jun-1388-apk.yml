@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 55
     env:
       ITO_COMMIT: e2686959a71ced5895e5dc95c438e4b8e43baa79
-      AGE_RECIPIENT: age1zzse7uddx2q8z4d5juh5u3uhd7pr5z3wtuqyruwyfsf6xnf78a6qkeedke
+      AGE_RECIPIENT: age1farsf606mcz7vcynzghcvtg0vlpvl5vkuy4vgpqpw2jqr83085ws3mnx4x
     steps:
       - name: Check out exact PR source
         shell: bash
@@ -47,41 +47,45 @@ jobs:
             sudo apt-get install -y --no-install-recommends age
           fi
           df -h .
-      - name: Build exact-head Tauri APK
+      - name: Build Murakumo arm64 and check native engines
         shell: bash
         working-directory: source
         run: |
+          test "$(git rev-parse HEAD)" = "$ITO_COMMIT"
+          # Adjust build-tool host paths from the macOS defaults.
+          sed -i 's/darwin-x86_64/linux-x86_64/g' apps/murakumo/scripts/{build-native,build-image-native}.py
+          python3 apps/murakumo/scripts/build-native.py arm64-v8a
+          python3 apps/murakumo/scripts/build-image-native.py arm64-v8a
           npm --prefix packages/awai-ui ci --no-audit --no-fund
           npm --prefix packages/awai-ui run build
           npm --prefix otehon/shell ci --no-audit --no-fund
-          npm --prefix apps/itonami ci --no-audit --no-fund
-          npm --prefix apps/itonami run build
-          npm --prefix apps/itonami run tauri -- android build --apk --target aarch64 --debug
+          npm --prefix apps/murakumo ci --no-audit --no-fund
+          npm --prefix apps/murakumo run build
+          npm --prefix apps/murakumo test
+          npm --prefix apps/murakumo run tauri -- android build --apk --target aarch64 --debug
       - name: Verify and encrypt APK
         shell: bash
         working-directory: source
         run: |
-          mapfile -t apks < <(find apps/itonami/src-tauri/gen/android/app/build/outputs/apk -type f -name '*.apk')
+          mapfile -t apks < <(find apps/murakumo/src-tauri/gen/android/app/build/outputs/apk -type f -name '*.apk')
           test "${#apks[@]}" -eq 1
           apk="${apks[0]}"
-          cp apps/itonami/dist/itonami-bundle.json "$RUNNER_TEMP/bundle.json"
-          jq -e --arg rev "$ITO_COMMIT" '.revision == $rev' "$RUNNER_TEMP/bundle.json"
-          asset_sha="$(sha256sum apps/itonami/dist/assets/main.js | cut -d' ' -f1)"
-          jq -e --arg sha "$asset_sha" '.artifacts["assets/main.js"].sha256 == $sha' "$RUNNER_TEMP/bundle.json"
-          unzip -p "$apk" lib/arm64-v8a/libitonami_app_lib.so |
-            LC_ALL=C strings -a | grep -oF 'itonami-bundle.json' | sort -u
-          "$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging "$apk" |
-            grep -F "package: name='network.itonami.app'"
+          "$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging "$apk" | grep -F "package: name='network.awai.murakumo'"
+          for lib in libawai_llama.so libawai_diffusion.so; do
+            unzip -p "$apk" "lib/arm64-v8a/$lib" | sha256sum
+          done
           "$ANDROID_HOME/build-tools/36.1.0/apksigner" verify "$apk"
-          cp "$apk" "$RUNNER_TEMP/itonami-arm64-debug.apk"
-          (cd "$RUNNER_TEMP" && sha256sum itonami-arm64-debug.apk > sha256.txt)
+          cp "$apk" "$RUNNER_TEMP/murakumo-arm64-debug.apk"
+          cp .agent-output/image-native-arm64-v8a.json "$RUNNER_TEMP/image-native.json"
+          printf '%s\n' "$(git rev-parse HEAD)" > "$RUNNER_TEMP/source.txt"
+          (cd "$RUNNER_TEMP" && sha256sum murakumo-arm64-debug.apk > sha256.txt)
           mkdir -p "$GITHUB_WORKSPACE/encrypted"
-          tar -C "$RUNNER_TEMP" -cf - itonami-arm64-debug.apk bundle.json sha256.txt |
-            age --recipient "$AGE_RECIPIENT" --output "$GITHUB_WORKSPACE/encrypted/itonami-arm64-debug.tar.age"
+          tar -C "$RUNNER_TEMP" -cf - murakumo-arm64-debug.apk image-native.json source.txt sha256.txt |
+            age --recipient "$AGE_RECIPIENT" --output "$GITHUB_WORKSPACE/encrypted/murakumo-arm64-debug.tar.age"
       - name: Upload encrypted APK only
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: jun-1388-encrypted-android-apk
-          path: encrypted/itonami-arm64-debug.tar.age
+          name: jun-1388-encrypted-murakumo-apk
+          path: encrypted/murakumo-arm64-debug.tar.age
           if-no-files-found: error
           retention-days: 1
