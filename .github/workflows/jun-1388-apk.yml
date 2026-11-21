@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     env:
-      ITO_COMMIT: dc361c2546f72bc00fd1288bd798097267084cda
+      ITO_COMMIT: e2686959a71ced5895e5dc95c438e4b8e43baa79
       AGE_RECIPIENT: age1zzse7uddx2q8z4d5juh5u3uhd7pr5z3wtuqyruwyfsf6xnf78a6qkeedke
     steps:
       - name: Check out exact PR source
