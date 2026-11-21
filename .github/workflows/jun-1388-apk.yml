@@ -1,7 +1,7 @@
-name: JUN-1388 Android APK
+name: JUN-1388 Awai account Android APK
 on:
   push:
-    branches: [codex/jun-1388-apk-ci]
+    branches: [codex/jun-1388-host-account-apk-ci]
 permissions:
   contents: read
 jobs:
@@ -9,8 +9,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     env:
-      ITO_COMMIT: 0b08bac355ebb7dc959c4d384ba7aaaf632cc7ba
-      AGE_RECIPIENT: age1f3dfv97utcg4fcra42302q7wfmlfs2pd8r5ywqkawdnjf3p0f96qsgkmp4
+      ITO_COMMIT: 6c2cf16bf8dd15e675f51ab5a178a8d2e30306b4
+      AGE_RECIPIENT: age1zzse7uddx2q8z4d5juh5u3uhd7pr5z3wtuqyruwyfsf6xnf78a6qkeedke
     steps:
       - name: Check out exact PR source
         shell: bash
