@@ -51,6 +51,8 @@ jobs:
         shell: bash
         working-directory: source
         run: |
+          npm --prefix packages/awai-ui ci --no-audit --no-fund
+          npm --prefix packages/awai-ui run build
           npm --prefix otehon/shell ci --no-audit --no-fund
           npm --prefix apps/itonami ci --no-audit --no-fund
           npm --prefix apps/itonami run build
