@@ -62,10 +62,15 @@ jobs:
           mapfile -t apks < <(find apps/itonami/src-tauri/gen/android/app/build/outputs/apk -type f -name '*.apk')
           test "${#apks[@]}" -eq 1
           apk="${apks[0]}"
-          manifest_entry="$(unzip -Z1 "$apk" | grep -E '(^|/)itonami-bundle\.json$')"
-          unzip -p "$apk" "$manifest_entry" > "$RUNNER_TEMP/bundle.json"
+          cp apps/itonami/dist/itonami-bundle.json "$RUNNER_TEMP/bundle.json"
           jq -e --arg rev "$ITO_COMMIT" '.revision == $rev' "$RUNNER_TEMP/bundle.json"
-          unzip -Z1 "$apk" | grep -E '^lib/arm64-v8a/.+\.so$'
+          asset_sha="$(sha256sum apps/itonami/dist/assets/main.js | cut -d' ' -f1)"
+          jq -e --arg sha "$asset_sha" '.artifacts["assets/main.js"].sha256 == $sha' "$RUNNER_TEMP/bundle.json"
+          unzip -p "$apk" lib/arm64-v8a/libitonami_app_lib.so |
+            LC_ALL=C strings -a | grep -oF 'itonami-bundle.json' | sort -u
+          "$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging "$apk" |
+            grep -F "package: name='network.itonami.app'"
+          "$ANDROID_HOME/build-tools/36.1.0/apksigner" verify "$apk"
           cp "$apk" "$RUNNER_TEMP/itonami-arm64-debug.apk"
           (cd "$RUNNER_TEMP" && sha256sum itonami-arm64-debug.apk > sha256.txt)
           mkdir -p "$GITHUB_WORKSPACE/encrypted"
