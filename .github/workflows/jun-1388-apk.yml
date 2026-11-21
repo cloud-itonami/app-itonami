@@ -1,0 +1,80 @@
+name: JUN-1388 Android APK
+on:
+  push:
+    branches: [codex/jun-1388-apk-ci]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      ITO_COMMIT: 0b08bac355ebb7dc959c4d384ba7aaaf632cc7ba
+      AGE_RECIPIENT: age1f3dfv97utcg4fcra42302q7wfmlfs2pd8r5ywqkawdnjf3p0f96qsgkmp4
+    steps:
+      - name: Check out exact PR source
+        shell: bash
+        run: |
+          git init source
+          git -C source remote add origin https://github.com/network-awai/awai-os.git
+          git -C source fetch --depth=1 origin "$ITO_COMMIT"
+          git -C source checkout --detach FETCH_HEAD
+          test "$(git -C source rev-parse HEAD)" = "$ITO_COMMIT"
+          test -z "$(git -C source status --porcelain)"
+      - name: Install pinned build prerequisites
+        shell: bash
+        run: |
+          export JAVA_HOME="$JAVA_HOME_21_X64"
+          export PATH="$JAVA_HOME/bin:$PATH"
+          java -version
+          node --version
+          rustup target add aarch64-linux-android
+          curl -fsSL --retry 4 https://download.clojure.org/install/linux-install-1.12.0.1530.sh -o "$RUNNER_TEMP/clojure-install.sh"
+          bash "$RUNNER_TEMP/clojure-install.sh" --prefix "$RUNNER_TEMP/clojure"
+          curl -fsSL --retry 4 https://dl.google.com/android/repository/commandlinetools-linux-16111833_latest.zip -o "$RUNNER_TEMP/android-tools.zip"
+          printf '%s  %s\n' e025545c62a8e64c7559119566a569fb1dec5f60 "$RUNNER_TEMP/android-tools.zip" | sha1sum -c -
+          unzip -q "$RUNNER_TEMP/android-tools.zip" -d "$RUNNER_TEMP/android-tools"
+          manager="$RUNNER_TEMP/android-tools/cmdline-tools/bin/sdkmanager"
+          (
+            set +o pipefail
+            yes | "$manager" --sdk_root="$ANDROID_HOME" --licenses >/dev/null
+          )
+          "$manager" --sdk_root="$ANDROID_HOME" 'platforms;android-37.0' 'ndk;27.0.12077973' 'build-tools;36.1.0'
+          echo "JAVA_HOME=$JAVA_HOME" >> "$GITHUB_ENV"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> "$GITHUB_ENV"
+          printf '%s\n' "$RUNNER_TEMP/clojure/bin" "$JAVA_HOME/bin" >> "$GITHUB_PATH"
+          if ! command -v age >/dev/null; then
+            sudo apt-get install -y --no-install-recommends age
+          fi
+          df -h .
+      - name: Build exact-head Tauri APK
+        shell: bash
+        working-directory: source
+        run: |
+          npm --prefix otehon/shell ci --no-audit --no-fund
+          npm --prefix apps/itonami ci --no-audit --no-fund
+          npm --prefix apps/itonami run build
+          npm --prefix apps/itonami run tauri -- android build --apk --target aarch64 --debug
+      - name: Verify and encrypt APK
+        shell: bash
+        working-directory: source
+        run: |
+          mapfile -t apks < <(find apps/itonami/src-tauri/gen/android/app/build/outputs/apk -type f -name '*.apk')
+          test "${#apks[@]}" -eq 1
+          apk="${apks[0]}"
+          manifest_entry="$(unzip -Z1 "$apk" | grep -E '(^|/)itonami-bundle\.json$')"
+          unzip -p "$apk" "$manifest_entry" > "$RUNNER_TEMP/bundle.json"
+          jq -e --arg rev "$ITO_COMMIT" '.revision == $rev' "$RUNNER_TEMP/bundle.json"
+          unzip -Z1 "$apk" | grep -E '^lib/arm64-v8a/.+\.so$'
+          cp "$apk" "$RUNNER_TEMP/itonami-arm64-debug.apk"
+          (cd "$RUNNER_TEMP" && sha256sum itonami-arm64-debug.apk > sha256.txt)
+          mkdir -p "$GITHUB_WORKSPACE/encrypted"
+          tar -C "$RUNNER_TEMP" -cf - itonami-arm64-debug.apk bundle.json sha256.txt |
+            age --recipient "$AGE_RECIPIENT" --output "$GITHUB_WORKSPACE/encrypted/itonami-arm64-debug.tar.age"
+      - name: Upload encrypted APK only
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: jun-1388-encrypted-android-apk
+          path: encrypted/itonami-arm64-debug.tar.age
+          if-no-files-found: error
+          retention-days: 1
